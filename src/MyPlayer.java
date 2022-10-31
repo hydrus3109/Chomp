@@ -10,22 +10,23 @@ import java.awt.*;
 public class MyPlayer {
     public Chip[][] gameBoard;
     public int[] columns;
-    public int[][][] combinations = new int[4][4][4];
+    public boardstate[][][] combinations = new boardstate[4][4][4];
 
     public MyPlayer() {
         columns = new int[10];
     }
     public void start(){
-        for(int i = 0 ; i < 4; i++){
+        for(int i = 0; i < 4; i++){
             for(int j = 0; j < 4; j++){
                 for(int z = 0; z < 4; z++){
-                    combinations[i][j][z] = -1;
+                    combinations[i][j][z] = new boardstate(i,j,z);
                 }
             }
         }
-        combinations[1][0][0] = 0;
+        combinations[1][0][0] = new boardstate(1,0,0);
+        combinations[1][0][0].winning = false;
     }
-    public ArrayList<Integer> moves(int a, int b, int c){
+    public ArrayList<boardstate> moves(int a, int b, int c){
         ArrayList<boardstate> arr = new ArrayList<>();
         for(int i = c-1;i>=0;i--){
             boardstate temp = new boardstate(a,b,i);
@@ -47,7 +48,7 @@ public class MyPlayer {
             int hi2 = c;
             if(i < b) hi1 = i;
             if (i < c) hi2 = i;
-            boardstate temp = new boardstate(a,b,c);
+            boardstate temp = new boardstate(i,hi1,hi2);
             arr.add(temp);
  //           System.out.println(i + " " + hi1 + " " + hi2 + "row3");
         }
@@ -63,58 +64,99 @@ public class MyPlayer {
                     }
                     else{
                         count++;
-                        System.out.println("Moves for " +  i + " " + j + " " + z);
-                        moves(i,j,z);
+                       System.out.println("win or lose for " +  i + " " + j + " " + z);
+                       System.out.println(combinations[i][j][z]. winning);
+                       combinations[i][j][z].print();
+
                     }
                 }
             }
         }
         System.out.println(count);
     }
-    public int solve(int a, int b, int c){
-        ArrayList<Integer> current = new ArrayList<>();
+    public boolean solve(int a, int b, int c){
+        ArrayList<boardstate> current = new ArrayList<>();
         current = moves(a,b,c);
         for(int i = 0; i < current.size(); i++){
             int x,y,z;
-            int yes = current.get(i);
-            //System.out.println(yes);
-            //algo for extracting is very scuffed cuz im stupid
-            // flipped x and z
-            x = yes%10;
-            yes = yes - x; yes = yes/10;
-            y = yes%10;
-            yes = yes-y; yes = yes/10;
-            z = yes %10;
-    //        System.out.println(z + " " + y + " " + x);
-            if(combinations[z][y][x] == 0){
-      //          System.out.println(z + " " + y + " " + x);
-                return yes;
+            boardstate yes = current.get(i);
+            x = yes.a;
+            y = yes.b;
+            z = yes.c;
+       //     yes.print();
+            if(combinations[x][y][z].winning == false){
+                combinations[a][b][c].a = x;
+                combinations[a][b][c].b = y;
+                combinations[a][b][c].c = z;
+       //         yes.print();
+                return true;
             }
 
         }
-        return 0;
+        return false;
 
     }
     public void generate_losses(){
         for(int i = 2; i <4;i++) {
-            combinations[i][0][0] = 1;
+            combinations[i][0][0].winning = true;
         }
-        combinations[1][1][0] = 1;
-        combinations[1][1][1] = 1;
+        combinations[1][1][0].winning = true;
+        combinations[1][1][1].winning = true;
         for(int i = 0; i < 4; i++){
             for(int j = 0; j < 4; j++){
                 for(int z = 1; z < 4; z++){
-                    if(solve(z,j,i) != 0){
-                        combinations[z][j][i] = solve(z,j,i);
+                    if(solve(z,j,i) == true){
+                        combinations[z][j][i].winning = true;
                     }
                     else{
-                        combinations[z][j][i] = 0;
+                        combinations[z][j][i].winning = false;
                     }
                 }
             }
         }
     }
+    public Point changestate(Chip[][] pBoard){
+        int[] heights = new int[3];
+        heights[0] =3;
+        heights[1] = 3;
+        heights[2] = 3;
+        for(int i = 0; i < 3; i++){
+           // System.out.println(pBoard[i][0].isAlive + " " + pBoard[i][1].isAlive + " " + pBoard[i][2].isAlive);
+            for(int j = 0; j < 3;j++){
+                if(pBoard[j][i].isAlive == false){
+                    heights[i] = j;
+                    break;
+                }
+            }
+        }
+ //       for(int i = 0; i < 3; i++){
+ //           System.out.println(heights[i] + " " + i);
+ //       }
 
+        boardstate rip = combinations[heights[0]][heights[1]][heights[2]];
+        rip.print();
+        if(rip.a != heights[0]){
+            Point myMove = new Point(rip.a, 0);
+            return myMove;
+        }
+        if(rip.b != heights[1]){
+            System.out.println("b");
+    //        System.out.println(column);
+            Point myMove = new Point(rip.b, 1);
+            return myMove;
+        }
+        if(rip.c != heights[2]){
+            System.out.println("c");
+            Point myMove = new Point(rip.c, 2);
+            return myMove;
+        }
+        int row = 0;
+        int column = heights[0]-1;
+    //    System.out.println(heights[0]);
+    //    System.out.println(column);
+        Point myMove = new Point(row, column);
+        return myMove;
+    }
 
 
     //add your code to return the row and the column of the chip you want to take.
@@ -123,17 +165,12 @@ public class MyPlayer {
 
 
         gameBoard = pBoard;
-        int column = 0;
-        int row = 0;
 
-        row = 2;
-        column = 4;
-
-        Point myMove = new Point(row, column);
         start();
-  //      generate(3);
         generate_losses();
-        System.out.println(combinations[2][2][2]);
+ //       generate(3);
+
+        Point myMove = changestate(gameBoard);
 
 
         return myMove;
